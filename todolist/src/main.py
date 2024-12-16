@@ -6,8 +6,9 @@ import sqlite3
 # Let's create the form class first so we can get some data
 class FormContainer(UserControl):
     # at this point, we can pass in a function from the main() so we can expand.minimize the form
-    def __init__(self):
-        self.func = None
+    # go back to the FormContainer() and add a argument as such..
+    def __init__(self, func):
+        self.func = func
         super().__init__()
         
     def build(self):
@@ -50,13 +51,128 @@ class FormContainer(UserControl):
             )
         
         
-# 
+# Now, we need a class to generate a task when the user adds one
+class CreateTask(UserControl):
+    def __init__(self, task: str, date: str, func1, func2):
+        # create two arguments so we can pass in the delete function and edit function when we create an instance of this
+        self.task = task
+        self.date = date
+        self.func1 = func1
+        self.func2 = func2
+        super().__init__()
+
+    def TaskDeleteEdit(self, nama, color, func):
+        return IconButton(
+            icon=name,
+            width=30,
+            icon_size=18,
+            icon_color=color,
+            opacity=0,
+            animate_opacity=200,
+            # to use it, we need to keep it in our delete and edit iconbuttons
+            on_click=lambda e: func(self.GetContainerInstance(e))
+        )
+    
+    # we need a final thing from here, and that is the instance itself.
+    # we need the instance identidier so that we can delete it needs to be delete
+    def GetContainerInstance(self):
+        return self # we return the self instance
+    
+    def ShowIcons(self, e):
+        if e.data == "true":
+            # these are the index's of each icon
+            (
+                e.control.content.controls[1].controls[0].opacity,
+                e.control.content.controls[1].controls[1].opacity, 
+            ) = (1,1)
+            e.control.content.update()
+        else:
+            (
+                e.control.content.controls[1].controls[0].opacity,
+                e.control.content.controls[1].controls[1].opacity,
+            ) = (0,0)
+            e.control.content.update()
+
+    def build(self):
+        return Container(
+            width=280,
+            height=60,
+            border=border.all(0.85, "white54"),
+            border_radius=8,
+            # let's show the icons when we hover over them..
+            on_hover=lambda e: self.ShowIcons(e),
+            clip_behavior=ClipBehavior.HARD_EDGE,
+            padding=10,
+            content=Row(
+                alignment=MainAxisAlignment.SPACE_BETWEEN,
+                controls=[
+                    Column(
+                        spacing=1,
+                        alignment=MainAxisAlignment.CENTER,
+                        controls=[
+                            Text(value=self.task, size=10),
+                            Text(value=self.date, size=9, color='white54'),
+                        ],
+                    ),
+                    # Icons Delete and Edit
+                    Row(
+                        spacing=0,
+                        alignment=MainAxisAlignment.CENTER,
+                        controls=[
+                            # make sure to pass the args here first !!
+                            self.TaskDeleteEdit(icons.DELETE_ROUNDED, "red500", self.func1),
+                            self.TaskDeleteEdit(icons.EDIT_ROUNDED, "white70", self.func2),
+                        ],
+                    ),
+                ],
+            ),
+        )
     
 
 def main(page: Page):
     page.horizontal_alignment = "center"
     page.vertical_alignment = "center"
+
+    def AddTaskToScreen(e):
+        # now, everytime the user adds a task, we need to fetch the data nad output it to the main column ..
+        # there are 2 data we need: the task + the data
+        # 
+        dateTime = datetime.now().strftime("%b %d, %Y  %I:%M")
+
+        # now recall that we set the form container to form variable. we can use this now to see if there's any content in the textfield
+        if form.content.controls[0].value: # this checks the textfield's value
+            _main_column_.controls.append[
+                # here, we can create an instance of CreateTask() class ...
+                CreateTask(
+                    # now, it takes two arguments
+                    form.content.controls[0].value, # task deskription ..
+                    dateTime,
+                    # now, the instance takes two more arguments whe called...
+                    DeleteFunction,
+                    UpdateFunction,
+                )
+            ]
+            _main_column_.update()
+
+            # we can recall the show.hide function for the form here
+            CreateToDoTask(e)
     
+    def DeleteFunction(e):
+        # when we want to delete, recall that these instances are in a list => so that means we can simply remove them when we want to
+
+        # let's show what e is..
+        # so the instance is passed on as e
+        _main_column_.controls.remove(e) # e is the instance itself
+        _main_column_.update()
+
+    def UpdateFunction(e):
+        # the update needs a little bit more work..
+        # we want to update from the form, so we need to pass whatever the user had from the instance back to the form, then change the functions and pass it back again...
+        form.height, form.opacity = 200, 1 # show the form
+        (
+            
+        )
+
     # function to show/hide form container
     def CreateToDoTask(e):
         # when we click ehe ADD iconbutton ...
@@ -117,7 +233,9 @@ def main(page: Page):
                             controls=[
                                 # main column here..
                                 _main_column_,
-                                FormContainer(),
+                                # Form class here ..
+                                # pass in the argument for the form class here
+                                FormContainer(lambda e: AddTaskToScreen(e)),
                             ]
                         )
                     )
