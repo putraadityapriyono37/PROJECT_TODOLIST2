@@ -3,6 +3,45 @@ from flet import *
 from datetime import datetime
 import sqlite3
 
+# okay, so the UI part is done, now for the final part, we can implement a database to store the task
+# we can create a class for thhis
+class Database:
+    def ConnectToDatabase():
+        try:
+            db = sqlite3.connect('todo.db')
+            c = db.cursor()
+            c.execute('CREATE TABLE if not exists tasks (id INTEGER PRIMARY KEY,Task VARCHAR(255) NOT NULL, Date VARCHAR(255) NOT NULL)')
+            return db
+        except Exception as e:
+            print(e)
+
+    def ReadDatabase(db):
+        c = db.cursor()
+        # make sure to name the columns and not SELECT * FROM ...
+        c.execute("SELECT Task, Data FROM tasks")
+        records = c.fetchall()
+        return records
+    
+    def InsertDatabase(db, values):
+        c = db.cursor()
+        # also make sure to use ? for the inputs for security purposes
+        c.execute("INSERT INTO tasks (Task, Date) VALUES (?,?)", values)
+        db.commit()
+
+    def DeleteDatabase(db, values):
+        c = db.cursor()
+        # quick note : here we're assuming that no two task description are the same and as a result we are deleting based on task.
+        # an ideal app would not do this but instead delete based on the actual immutable database ID. but for the sake of the tutorial and length, we will do it this way ...
+        c.execute("DELETE FROM tasks WHERE Task=?", value)
+        db.commit()
+
+    def UpdateDatabase(db, value):
+        c = db.cursor()
+        c.execute("UPDATE tasks SET Task=? WHERE Task=?", value)
+        db.commit()
+# now that we have all CRUD functions, we can start using it with the app.
+
+
 # Let's create the form class first so we can get some data
 class FormContainer(UserControl):
     # at this point, we can pass in a function from the main() so we can expand.minimize the form
@@ -139,6 +178,15 @@ def main(page: Page):
         # 
         dateTime = datetime.now().strftime("%b %d, %Y  %I:%M")
 
+        # we can use the db here for starters ...
+        # first, open a connection to the database
+        db = Database.InsertDatabase(db, (form.content.controls[0].value, dateTime))
+        # we have both values, one the date and time and the other user task
+        # finally close the connect
+        db.close()
+
+        # we could also place the db functions within the if statement ...
+
         # now recall that we set the form container to form variable. we can use this now to see if there's any content in the textfield
         if form.content.controls[0].value: # this checks the textfield's value
             _main_column_.controls.append[
@@ -156,8 +204,16 @@ def main(page: Page):
 
             # we can recall the show.hide function for the form here
             CreateToDoTask(e)
+        else:
+            db.close()# make sure it closes even if there is no user input
+            pass
     
     def DeleteFunction(e):
+        db = Database.ConnectToDatabase()
+        Database.DeleteDatabase(
+            db, (e.controls[0].content.controls[0].value,)
+        )
+        db.close()
         # when we want to delete, recall that these instances are in a list => so that means we can simply remove them when we want to
 
         # let's show what e is..
@@ -170,17 +226,53 @@ def main(page: Page):
         # we want to update from the form, so we need to pass whatever the user had from the instance back to the form, then change the functions and pass it back again...
         form.height, form.opacity = 200, 1 # show the form
         (
-            
+            form.content.controls[0].value,
+            # here we changing the button function and name ...
+            # we need to change it from add task to update and so on ...
+            form.content.controls[1].content.value,
+            form.content.controls[0].on_click
+        ) = (
+            e.controls[0]
+            .content.controls[0]
+            .controls[0]
+            .value, # this is the instance value of the task
+            "Update",
+            lambda _: FinalizeUpdate(e),
         )
+        form.update()
+
+        # once the user edits, we need to send the correct data back
+    def FinalizeUpdate(e):
+        db = Database.ConnectToDatabase()
+        Database.UpdateDatabase(
+            db,
+            (
+                form.content.controls[0].value,
+                e.controls[0].content.controls[0].controls[0].value,
+            )
+        )
+        # we can simply reverse the values from above ...
+        e.controls[0].content.controls[0].controls[0].value =  form.content.
+        controls[
+            0
+        ].value
+        e.controls[0].content.update()
+        # so we can do the container
+        CreateToDoTask(e)
+
 
     # function to show/hide form container
     def CreateToDoTask(e):
         # when we click ehe ADD iconbutton ...
-        if form.height != 150:
-            form.height, form.opacity = 150, 1
+        if form.height != 200:
+            form.height, form.opacity = 200, 1
             form.update()
         else:
             form.height, form.opacity = 80, 0
+            # we can remove the values from the textfield too ...
+            form.content.controls[0].value = None
+            form.content.controls[1].content.value = "Add Text",
+            form.content.controls[1].on_click = lambda e: AddTaskToScreen(e)
             form.update()
     
     _main_column_ = Column(
@@ -248,6 +340,25 @@ def main(page: Page):
     # the form container index is as follows. We can set the long element index as a variable so it can be called faster and easier.
     form = page.controls[0].content.controls[0].content.controls[1].controls[0]
     # now we can call form whenever we want to do something with it...
+
+    # how to display it, we need to read the database
+    # another note: Flet keeps on refreshing when we call the database functions,
+    # this could be from my code or from flet itself, but it should be addressed ...
+    # open connection
+    db = Database.ConnectToDatabase()
+    # now remember that the readdatabase() function return the records ...
+    # note : return is a tuple data type!!
+    # using [::-1] reverse the tuple
+    # using [:-1] reverse the tuple
+    for task in Database.ReadDatabase(db)[::-1]:
+        _main_column_.controls.append(
+            CreateTask(
+                task[0], # first item of the returned tuple
+                task[1],
+                DeleteFunction,
+                UpdateFunction,
+            )
+        )
 
 if __name__ == "__main__":
     flet.app(target=main)
