@@ -253,8 +253,7 @@ def main(page: Page):
             )
         )
         # we can simply reverse the values from above ...
-        e.controls[0].content.controls[0].controls[0].value =  form.content,
-        controls[
+        e.controls[0].content.controls[0].controls[0].value =  form.content.controls[
             0
         ].value
         e.controls[0].content.update()
