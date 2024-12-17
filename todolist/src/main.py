@@ -18,7 +18,7 @@ class Database:
     def ReadDatabase(db):
         c = db.cursor()
         # make sure to name the columns and not SELECT * FROM ...
-        c.execute("SELECT Task, Data FROM tasks")
+        c.execute("SELECT Task, Date FROM tasks")
         records = c.fetchall()
         return records
     
@@ -32,12 +32,12 @@ class Database:
         c = db.cursor()
         # quick note : here we're assuming that no two task description are the same and as a result we are deleting based on task.
         # an ideal app would not do this but instead delete based on the actual immutable database ID. but for the sake of the tutorial and length, we will do it this way ...
-        c.execute("DELETE FROM tasks WHERE Task=?", value)
+        c.execute("DELETE FROM tasks WHERE Task=?", values)
         db.commit()
 
-    def UpdateDatabase(db, value):
+    def UpdateDatabase(db, values):
         c = db.cursor()
-        c.execute("UPDATE tasks SET Task=? WHERE Task=?", value)
+        c.execute("UPDATE tasks SET Task=? WHERE Task=?", values)
         db.commit()
 # now that we have all CRUD functions, we can start using it with the app.
 
@@ -102,7 +102,7 @@ class CreateTask(UserControl):
 
     def TaskDeleteEdit(self, nama, color, func):
         return IconButton(
-            icon=name,
+            icon=nama,
             width=30,
             icon_size=18,
             icon_color=color,
@@ -180,6 +180,7 @@ def main(page: Page):
 
         # we can use the db here for starters ...
         # first, open a connection to the database
+        db = Database.ConnectToDatabase()
         db = Database.InsertDatabase(db, (form.content.controls[0].value, dateTime))
         # we have both values, one the date and time and the other user task
         # finally close the connect
@@ -189,7 +190,7 @@ def main(page: Page):
 
         # now recall that we set the form container to form variable. we can use this now to see if there's any content in the textfield
         if form.content.controls[0].value: # this checks the textfield's value
-            _main_column_.controls.append[
+            _main_column_.controls.append(
                 # here, we can create an instance of CreateTask() class ...
                 CreateTask(
                     # now, it takes two arguments
@@ -199,7 +200,7 @@ def main(page: Page):
                     DeleteFunction,
                     UpdateFunction,
                 )
-            ]
+            )
             _main_column_.update()
 
             # we can recall the show.hide function for the form here
@@ -252,7 +253,7 @@ def main(page: Page):
             )
         )
         # we can simply reverse the values from above ...
-        e.controls[0].content.controls[0].controls[0].value =  form.content.
+        e.controls[0].content.controls[0].controls[0].value =  form.content,
         controls[
             0
         ].value
